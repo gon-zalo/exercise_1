@@ -16,30 +16,36 @@ import matplotlib.pyplot as plt
 # scrape('biggie', 'english_lyrics.txt')
 # scrape('a tribe called quest', 'english_lyrics.txt')
 
-file_polish = 'polish_lyrics_small.txt'
-# file_english = 'english_lyrics_small.txt'
+# file_polish = 'polish_lyrics_small.txt'
+file_english = 'english_lyrics.txt'
 
-with open(file_polish, "r", encoding="utf-8") as file:
-    text_pol = file.read()
+# with open(file_polish, "r", encoding="utf-8") as file:
+#     text_pol = file.read()
 
-# with open(file_english, "r", encoding="utf-8") as file:
-#     text_eng = file.read()
+with open(file_english, "r", encoding="utf-8") as file:
+    text_eng = file.read()
 
-# nlp_eng = en_core_web_sm.load()
-nlp_pol = spacy.load('pl_core_news_sm')
+# nlp_pol = spacy.load('pl_core_news_sm')
+nlp_eng = spacy.load('en_core_web_sm')
 
-nlp_pol.max_length = 2000000
+# nlp_pol.max_length = 2000000
+nlp_eng.max_length = 3000000
 
-doc_pol = nlp_pol(text_pol)
+# doc_pol = nlp_pol(text_pol)
+doc_eng = nlp_eng(text_eng)
 
-tokens_pol = [token.text.lower() for token in doc_pol if token.is_alpha]
+# tokens_pol = [token.text.lower() for token in doc_pol if token.is_alpha]
 # lemmas_pol = [token.lemma_ for token in doc_pol]
+tokens_eng = [token.text.lower() for token in doc_eng if token.is_alpha]
 
 # getting the length of each token
-word_lengths_pol = [len(word) for word in tokens_pol]
+# word_lengths_pol = [len(word) for word in tokens_pol]
+word_lengths_eng = [len(word) for word in tokens_eng]
 
 # Use Counter to get the frequency of each word length
-length_counts = Counter(word_lengths_pol)
+# length_counts = Counter(word_lengths_pol)
+
+length_counts = Counter(word_lengths_eng)
 
 # Sort by word length (result is a list of tuples, for example: [(1, 533), (2, 324)] ...)
 sorted_length_counts = sorted(length_counts.items())
@@ -53,7 +59,7 @@ for length, freq in sorted_length_counts:
 # # # Plot the graph (Zipf's Law of Abbreviation)
 plt.figure(figsize=(10, 6))
 plt.plot(lengths, frequencies, marker='o', linestyle='-', color='#5B5F97')
-plt.xticks(range(0, 30 + 1, 1))  # Adjust the step (2 in this case) for more ticks
+plt.xticks(range(1, 30 + 1, 1))  # Adjust the step (2 in this case) for more ticks
 plt.xlabel('Word Length (in number of characters)')
 plt.ylabel('Frequency of Word Length (absolute values)')
 plt.title('Zipf\'s Law of Abbreviation in Polish')
