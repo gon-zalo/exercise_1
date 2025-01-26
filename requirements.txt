@@ -1,3 +1,5 @@
-bs4
-spacy
-matplotlib
+beautifulsoup4~=4.12.3
+spacy~=3.8.3
+matplotlib~=3.10.0
+num2words~=0.5.14
+requests~=2.32.3
