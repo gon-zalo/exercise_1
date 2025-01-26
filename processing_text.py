@@ -183,6 +183,7 @@ def process_lyrics(file_path, model, language):
     plt.ylabel('Relative frequency of word length')
     plt.title(f'Zipf\'s Law of Abbreviation in {model_name} lyrics')
     plt.savefig(f'zipf_abbreviation_{language}_relative.png')
+
     plt.show()
 
 ### ###
