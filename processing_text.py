@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 from collections import Counter
 import re
 from num2words import num2words
+import numpy as np
 import en_core_web_sm
 import pl_core_news_sm
-
 
 # scraping function to get the song lyrics
 def scrape(artist, output_file):
@@ -165,24 +165,23 @@ def process_lyrics(file_path, model, language):
     for length, freq, rel_freq in zip(lengths, absolute_frequencies, relative_frequencies): # need to zip them
         print(f"Length: {length}, Frequency: {freq}, Relative Frequency: {rel_freq:.6f}")
 
-    # this code plots two graphs, one with absolute frequencies and another with relative frequencies
-    # plt.figure(figsize=(6, 4))
-    # plt.subplots_adjust(left = 0.155, right=0.935, top=0.910, bottom=0.14)
-    # plt.plot(lengths, absolute_frequencies, marker='o', linestyle='-', color='#DF9B6D')
-    # plt.xticks(range(1, 19 + 1, 1))
-    # plt.xlabel('Word length (in number of characters)')
-    # plt.ylabel('Absolute frequency of word length')
-    # plt.title(f'Zipf\'s Law of Abbreviation in {language.capitalize()} lyrics')
-    # plt.savefig(f'zipf_abbreviation_{language}_absolute.png')
+    # code to plot the data
+    # simple if statement to choose the colour of the plotted line
+    if language == 'polish':
+        color = '#E15554'
+    else:
+        color = '#4D9DE0'
 
     plt.figure(figsize=(6, 4))
     plt.subplots_adjust(left = 0.155, right=0.935, top=0.910, bottom=0.14)
-    plt.plot(lengths, relative_frequencies, marker='o', linestyle='-', color='#473144')
+    plt.plot(lengths, relative_frequencies, marker='o', linestyle='-', color=color)
     plt.xticks(range(1, 19 + 1, 1))
+    plt.yticks(np.arange(0, 0.250, 0.025)) # using np.arange to allow for floating point numbers
     plt.xlabel('Word length (in number of characters)')
     plt.ylabel('Relative frequency of word length')
     plt.title(f'Zipf\'s Law of Abbreviation in {language.capitalize()} lyrics')
-    plt.savefig(f'zipf_abbreviation_{language}_relative.png')
+    # uncomment to save the plot
+    # plt.savefig(f'zipf_abbreviation_{language}_relative.pdf', format='pdf')
 
     plt.show()
 
@@ -190,8 +189,9 @@ def process_lyrics(file_path, model, language):
 
 # loading the models
 print('\nLoading models...\n')
+nlp_eng = spacy.load('en_core_web_sm')
 nlp_pol = spacy.load('pl_core_news_sm')
-# nlp_eng = spacy.load('en_core_web_sm')
 
-process_lyrics(file_path='polish_lyrics.txt', model=nlp_pol, language='polish')
-# process_lyrics('english_lyrics.txt', nlp_eng, 'english')
+# running the main function for english and polish
+process_lyrics(file_path='english_lyrics.txt', model=nlp_eng, language='english')
+process_lyrics('polish_lyrics.txt', nlp_pol, 'polish')
