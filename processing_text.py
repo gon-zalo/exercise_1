@@ -24,6 +24,7 @@ def scrape(artist, output_file):
         'de la soul': ('de_la_soul', 2),
         'biggie': ('notorious_b_i_g_', 1),
         'a tribe called quest': ('a_tribe_called_quest', 1),
+        'outkast':('outkast', 2),
         
         # polish artists
         'ostr': ('o_s_t_r_', 4),
@@ -64,8 +65,9 @@ def scrape(artist, output_file):
                 
                 # extracting the lyrics from the appropiate div class. There is only one class so .find() is enough
                 lyrics_div = song_soup.find('div', class_='inner-text')
-                lyrics = lyrics_div.get_text().strip() # .get_text() revomes html tags, .strip() removes extra whitespaces from the text
-                file.write(lyrics) # writing the lyrics to the file, no titles
+                if lyrics_div:
+                    lyrics = lyrics_div.get_text().strip() # .get_text() revomes html tags, .strip() removes extra whitespaces from the text
+                    file.write(lyrics) # writing the lyrics to the file, no titles
 
                 print(f"Saved lyrics for: {song_title}")
 
@@ -85,8 +87,8 @@ artists_and_files = [
     ('de la soul', 'english_lyrics.txt'),
     ('biggie', 'english_lyrics.txt'),
     ('a tribe called quest', 'english_lyrics.txt'),
+    ('outkast', 'english_lyrics.txt')
 ]
-
 # for loop that goes through the list above to scrape said lyrics. It's scraping more than 1400 songs so it takes a couple of minutes.
 # for artist, file in artists_and_files:
 #     scrape(artist, file)
@@ -123,15 +125,10 @@ def clean_text(file_path, language):
 
     return cleaned_text
 
-# function to process the scraped lyrics
+# function to process the scraped lyrics, need to pass language for the clean_text function
 def process_lyrics(file_path, model, language):
 
-    print(f'\nProcessing {language} lyrics...')
-    # this is just for the name of the plot
-    if language == 'polish':
-        model_name = 'Polish'
-    else:
-        model_name = 'English'
+    print(f'\nProcessing {language.capitalize()} lyrics...')
 
     model.max_length = 3000000 # there are more than 2 million characters so this is needed
 
@@ -156,6 +153,7 @@ def process_lyrics(file_path, model, language):
 
     # calculating relative frequencies (frequency divided by total number of tokens)
     total_tokens = len(tokens)
+    print(f'There are {total_tokens} tokens in {file_path}\n')
     relative_frequencies = [freq / total_tokens for freq in absolute_frequencies] # freq in frequencies are already sorted, so no need to do it here
 
     # filtering lengths up to 20, longer words appear only once in both languages
@@ -168,20 +166,22 @@ def process_lyrics(file_path, model, language):
         print(f"Length: {length}, Frequency: {freq}, Relative Frequency: {rel_freq:.6f}")
 
     # this code plots two graphs, one with absolute frequencies and another with relative frequencies
-    plt.figure(figsize=(10, 6))
-    plt.plot(lengths, absolute_frequencies, marker='o', linestyle='-', color='#DF9B6D')
-    plt.xticks(range(1, 19 + 1, 1))
-    plt.xlabel('Word Length (in number of characters)')
-    plt.ylabel('Absolute frequency of word length')
-    plt.title(f'Zipf\'s Law of Abbreviation in {model_name} lyrics')
-    plt.savefig(f'zipf_abbreviation_{language}_absolute.png')
+    # plt.figure(figsize=(6, 4))
+    # plt.subplots_adjust(left = 0.155, right=0.935, top=0.910, bottom=0.14)
+    # plt.plot(lengths, absolute_frequencies, marker='o', linestyle='-', color='#DF9B6D')
+    # plt.xticks(range(1, 19 + 1, 1))
+    # plt.xlabel('Word length (in number of characters)')
+    # plt.ylabel('Absolute frequency of word length')
+    # plt.title(f'Zipf\'s Law of Abbreviation in {language.capitalize()} lyrics')
+    # plt.savefig(f'zipf_abbreviation_{language}_absolute.png')
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(6, 4))
+    plt.subplots_adjust(left = 0.155, right=0.935, top=0.910, bottom=0.14)
     plt.plot(lengths, relative_frequencies, marker='o', linestyle='-', color='#473144')
     plt.xticks(range(1, 19 + 1, 1))
-    plt.xlabel('Word Length (in number of characters)')
+    plt.xlabel('Word length (in number of characters)')
     plt.ylabel('Relative frequency of word length')
-    plt.title(f'Zipf\'s Law of Abbreviation in {model_name} lyrics')
+    plt.title(f'Zipf\'s Law of Abbreviation in {language.capitalize()} lyrics')
     plt.savefig(f'zipf_abbreviation_{language}_relative.png')
 
     plt.show()
@@ -191,7 +191,7 @@ def process_lyrics(file_path, model, language):
 # loading the models
 print('\nLoading models...\n')
 nlp_pol = spacy.load('pl_core_news_sm')
-nlp_eng = spacy.load('en_core_web_sm')
+# nlp_eng = spacy.load('en_core_web_sm')
 
 process_lyrics(file_path='polish_lyrics.txt', model=nlp_pol, language='polish')
-process_lyrics('english_lyrics.txt', nlp_eng, 'english')
+# process_lyrics('english_lyrics.txt', nlp_eng, 'english')
