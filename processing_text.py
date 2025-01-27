@@ -94,7 +94,7 @@ artists_and_files = [
 #     scrape(artist, file)
 
 ### FUNCTIONS ###
-# both functions substitute digits for their text equivalent i.e. 14 for fourteen
+# both functions substitute digits for their text equivalent i.e. 14 for fourteen or czternaście (in polish)
 def digits_to_words_pl(match):
     # Extract the matched digits from the regex
     number = match.group()
