@@ -22,6 +22,7 @@ ONCE ALL OF THAT IS DONE IT WILL CALCULATE ZIPF'S ABBREVIATION LAW AND SHOW A PL
 '''
 
 ### function to scrape ###
+
 def scrape(artist, output_file):
 
     artist_info = {
@@ -86,15 +87,6 @@ def scrape(artist, output_file):
             else: # if there is only one page, stop the loop
                 break
 
-# file where the lyrics will be stored and list of artists
-files_and_artists = {'polish_lyrics.txt': ['ostr', 'paktofonika', 'pezet', 'łona i webber', '52 dębiec'], 
-                     'english_lyrics.txt': ['eminem', 'de la soul', 'outkast', 'biggie', 'a tribe called quest']}
-
-# double for loop that goes through the list above to scrape the lyrics. It's scraping more than 1500 songs so it takes a couple of minutes
-for file, artists in files_and_artists.items():
-    for artist in artists:
-        scrape(artist, file)
-
 ### functions to process text ###
 
 # both functions substitute digits for their text equivalent i.e. 14 for fourteen (in english) or czternaście (in polish)
@@ -126,7 +118,7 @@ def clean_text(file_path, language):
 
     return cleaned_text
 
-# main function to process the scraped lyrics, need to pass language for the clean_text function primarily but i also use it for more stuff
+# main function to process the scraped lyrics and calculate zipf's law, need to pass language for the clean_text function primarily but i also use it for more stuff
 def process_lyrics(file_path, model, language):
 
     print(f'\nProcessing {language.capitalize()} lyrics...')
@@ -188,11 +180,21 @@ def process_lyrics(file_path, model, language):
 
 ### ###
 
-# this is where the models are loaded and where the main functions are called
-print('\nLoading models...\n')
+# dictionary of files where the lyrics will be stored and list of artists
+files_and_artists = {'polish_lyrics.txt': ['ostr', 'paktofonika', 'pezet', 'łona i webber', '52 dębiec'], 
+                     'english_lyrics.txt': ['eminem', 'de la soul', 'outkast', 'biggie', 'a tribe called quest']}
+
+# this is where things happen, the functions are called and the models are loaded
+print('Scraping lyrics...\n')
+# double for loop that goes through the list of files and artists to scrape the lyrics. It's scraping more than 1500 songs so it takes a couple of minutes
+for file, artists in files_and_artists.items():
+    for artist in artists:
+        scrape(artist, file) # scraping function
+
+print('\nLoading models...\n') # loading the models to process the scraped lyrics
 nlp_eng = spacy.load('en_core_web_sm') # english model
 nlp_pol = spacy.load('pl_core_news_sm') # polish model
 
-# running the main function for english and polish
+# running the main function for english and polish, need to call the file we are reading the content of
 process_lyrics(file_path='english_lyrics.txt', model=nlp_eng, language='english') # just specifying the arguments for clarity
 process_lyrics('polish_lyrics.txt', nlp_pol, 'polish')
