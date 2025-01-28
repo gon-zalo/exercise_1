@@ -12,8 +12,6 @@ from collections import Counter
 import re
 from num2words import num2words
 import numpy as np
-import en_core_web_sm
-import pl_core_news_sm
 
 '''
 THIS CODE WILL FIRST SCRAPE LYRICS FROM MORE THAN 1500 SONGS AND CREATE TWO .TXT FILES, ONE FOR ENGLISH AND ONE FOR POLISH
