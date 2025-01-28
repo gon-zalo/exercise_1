@@ -159,43 +159,45 @@ def process_lyrics(file_path, model, language):
     for length, freq, rel_freq in zip(lengths, absolute_frequencies, relative_frequencies): # need to zip them
         print(f"Length: {length}, Frequency: {freq}, Relative Frequency: {rel_freq:.6f}")
 
-    # code to plot the data
-    # simple if statement to choose the colour of the plotted line
-    if language == 'polish':
-        color = '#E15554'
-    else:
-        color = '#4D9DE0'
-
-    plt.figure(figsize=(6, 4))
-    plt.subplots_adjust(left = 0.155, right=0.935, top=0.910, bottom=0.14)
-    plt.plot(lengths, relative_frequencies, marker='o', linestyle='-', color=color)
-    plt.xticks(range(1, len(lengths) + 1, 1))
-    plt.yticks(np.arange(0, 0.225, 0.025)) # using np.arange to allow for floating point numbers
-    plt.xlabel('Word length (in number of characters)')
-    plt.ylabel('Relative frequency of word length')
-    plt.title(f'Zipf\'s Law of Abbreviation in {language.capitalize()} lyrics')
-    # uncomment to save the plot
-    # plt.savefig(f'zipf_abbreviation_{language}_relative.pdf', format='pdf')
-
-    plt.show()
-
-### ###
+    return lengths, relative_frequencies # to plot the data afterwards
 
 # dictionary of files where the lyrics will be stored and list of artists
 files_and_artists = {'polish_lyrics.txt': ['ostr', 'paktofonika', 'pezet', 'łona i webber', '52 dębiec'], 
                      'english_lyrics.txt': ['eminem', 'de la soul', 'outkast', 'biggie', 'a tribe called quest']}
 
-# this is where things happen, the functions are called and the models are loaded
-print('Scraping lyrics...\n')
-# double for loop that goes through the list of files and artists to scrape the lyrics. It's scraping more than 1500 songs so it takes a couple of minutes
-for file, artists in files_and_artists.items():
-    for artist in artists:
-        scrape(artist, file) # scraping function
+# # this is where things happen, the functions are called and the models are loaded
+# print('Scraping lyrics...\n')
+# # double for loop that goes through the list of files and artists to scrape the lyrics. It's scraping more than 1500 songs so it takes a couple of minutes
+# for file, artists in files_and_artists.items():
+#     for artist in artists:
+#         scrape(artist, file) # scraping function
 
 print('\nLoading models...\n') # loading the models to process the scraped lyrics
 nlp_eng = spacy.load('en_core_web_sm') # english model
 nlp_pol = spacy.load('pl_core_news_sm') # polish model
 
 # running the main function for english and polish, need to call the file we are reading the content of
-process_lyrics(file_path='english_lyrics.txt', model=nlp_eng, language='english') # just specifying the arguments for clarity
-process_lyrics('polish_lyrics.txt', nlp_pol, 'polish')
+lengths_eng, rel_freq_eng = process_lyrics(file_path='english_lyrics.txt', model=nlp_eng, language='english') # just specifying the arguments for clarity
+lengths_pol, rel_freq_pol = process_lyrics('polish_lyrics.txt', nlp_pol, 'polish')
+
+
+# Plotting both English and Polish lyrics together
+plt.figure(figsize=(6, 4))
+plt.subplots_adjust(left=0.155, right=0.935, top=0.910, bottom=0.14)
+
+# Plot English lyrics
+plt.plot(lengths_eng, rel_freq_eng, marker='o', linestyle='-', color='#3BB273', label='English')
+
+# Plot Polish lyrics
+plt.plot(lengths_pol, rel_freq_pol, marker='o', linestyle='-', color='#7768AE', label='Polish')
+
+plt.xticks(range(1, max(len(lengths_eng), len(lengths_pol)) + 1, 1))
+plt.yticks(np.arange(0, 0.225, 0.025)) # using np.arange to allow for floating point numbers
+plt.xlabel('Word length (in number of characters)')
+plt.ylabel('Relative frequency of word length')
+plt.title('Zipf\'s Law of Abbreviation in English and Polish lyrics')
+plt.legend()
+plt.grid(alpha=0.5)
+plt.savefig('zipf_abbreviation_english_polish.pdf', format='pdf')
+
+plt.show()
