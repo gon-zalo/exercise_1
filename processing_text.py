@@ -15,7 +15,13 @@ import numpy as np
 import en_core_web_sm
 import pl_core_news_sm
 
-# scraping function to get the song lyrics
+'''
+THIS CODE WILL FIRST SCRAPE LYRICS FROM MORE THAN 1500 SONGS AND CREATE TWO .TXT FILES, ONE FOR ENGLISH AND ONE FOR POLISH
+AFTERWARDS IT WILL CLEAN THE TEXT OF THE FILE (FIRST ENGLISH, THEN POLISH) OF UNNECESSARY STUFF USING REGEX AND IT WILL TOKENIZE IT USING SPACY 
+ONCE ALL OF THAT IS DONE IT WILL CALCULATE ZIPF'S ABBREVIATION LAW AND SHOW A PLOT
+'''
+
+### function to scrape ###
 def scrape(artist, output_file):
 
     artist_info = {
@@ -35,16 +41,19 @@ def scrape(artist, output_file):
     }
 
     # checks if the artist exists in the dictionary above
-    if artist in artist_info: # if it does, assign a name (that goes into the url from which to scrape the lyrics later) and a number of pages that is taken into account in the for loop to move to the next page
-        artist_name, number_of_pages = artist_info[artist]
+    if artist in artist_info: # if it does, assign a url name (it goes into the url from which to scrape the lyrics later) and a number of pages that is taken into account in the for loop to move to the next page
+        artist_url_name, number_of_pages = artist_info[artist]
 
     base_url = "https://www.tekstowo.pl" # to create the url of each song
+
     # creating a new file if it doesn't exist, if it does it's just appending the lyrics
     with open(output_file, "a", encoding="utf-8") as file: 
+
         page_number = 1 # starting page number
+
         for num in range(number_of_pages): # taking into account number_of_pages to move to the next one
             # this is the template url where the name of the artist and the page number are filled in
-            url = f"https://www.tekstowo.pl/piosenki_artysty,{artist_name},alfabetycznie,strona,{page_number}.html"
+            url = f"https://www.tekstowo.pl/piosenki_artysty,{artist_url_name},alfabetycznie,strona,{page_number}.html"
             print(f"page number {page_number} of {artist}")
 
             # getting the html text of the url
@@ -55,19 +64,20 @@ def scrape(artist, output_file):
             ranking_list = soup.find('div', class_='ranking-lista') # this is finding the list of songs of the artist, there is only one class "ranking_lista"
             song_links = ranking_list.select('a.title') # in the list of songs, select every <a> element with the class "title", it's where the link to the song is located
 
-            for link in song_links: # iterates over the links
+            for link in song_links: # iterates over the links in the list
+                
                 song_url = base_url + link['href'] # creates the url. 'href' is the link, it is inside the <a> element previously selected
-                song_title = link.text.strip() # variable for the title of the song, this is also in the <a> element. I only print it, it doesn't go into the output file
+                song_title = link.text.strip() # variable for the title of the song, this is the text in the <a> element. I only print it, it doesn't go into the output file
 
-                # once in the song page, getting the html. Same as the previous code 
+                # once in the song site, getting the html. Same thing as the previous code, it is retrieving the html text as a string 
                 song_response = requests.get(song_url).text
                 song_soup = BeautifulSoup(song_response, 'html.parser')
                 
-                # extracting the lyrics from the appropiate div class. There is only one class so .find() is enough
+                # extracting the lyrics from the appropiate div class. They are located in a unique class so .find() is enough
                 lyrics_div = song_soup.find('div', class_='inner-text')
                 if lyrics_div:
                     lyrics = lyrics_div.get_text().strip() # .get_text() revomes html tags, .strip() removes extra whitespaces from the text
-                    file.write(lyrics) # writing the lyrics to the file, no titles
+                    file.write(lyrics) # saving the lyrics to the file
 
                 print(f"Saved lyrics for: {song_title}")
 
@@ -77,39 +87,31 @@ def scrape(artist, output_file):
                 break
 
 # list of artists and the name of the file to which append the lyrics
-artists_and_files = [
-    ('ostr', 'polish_lyrics.txt'),
-    ('paktofonika', 'polish_lyrics.txt'),
-    ('pezet', 'polish_lyrics.txt'),
-    ('łona i webber', 'polish_lyrics.txt'),
-    ('52 dębiec', 'polish_lyrics.txt'),
-    ('eminem', 'english_lyrics.txt'),
-    ('de la soul', 'english_lyrics.txt'),
-    ('biggie', 'english_lyrics.txt'),
-    ('a tribe called quest', 'english_lyrics.txt'),
-    ('outkast', 'english_lyrics.txt')
-]
-# for loop that goes through the list above to scrape said lyrics. It's scraping more than 1400 songs so it takes a couple of minutes.
-# for artist, file in artists_and_files:
-#     scrape(artist, file)
+files_and_artists = {'polish_lyrics.txt': ['ostr', 'paktofonika', 'pezet', 'łona i webber', '52 dębiec'], 
+                     'english_lyrics.txt': ['eminem', 'de la soul', 'outkast', 'biggie', 'a tribe called quest']}
 
-### FUNCTIONS ###
-# both functions substitute digits for their text equivalent i.e. 14 for fourteen or czternaście (in polish)
-def digits_to_words_pl(match):
-    # Extract the matched digits from the regex
-    number = match.group()
 
-    # Convert the number to words in Polish
-    return num2words(number, lang='pl')
+# double for loop that goes through the list above to scrape said lyrics. It's scraping more than 1500 songs so it takes a couple of minutes
+for file, artists in files_and_artists.items():
+    for artist in artists:
+        scrape(artist, file)
 
-def digits_to_words_en(match):
+### functions to process text ###
 
+# both functions substitute digits for their text equivalent i.e. 14 for fourteen (in english) or czternaście (in polish)
+def digits_to_words_en(match): # extracts the matched digits from the regex (groups them so 14 is fourteen not one four) then runs the function from the library, specifying the language
+    
     number = match.group()
     return num2words(number, lang='en')
 
+def digits_to_words_pl(match): # same as the above function
+    
+    number = match.group()
+    return num2words(number, lang='pl')
+
 # function to clean text with regex, it runs inside the process_lyrics function 
 # it removes text inside brackets and parenthesis, both included, removes "Chorus" in both languages, 
-# substitutes ` for ' and substitutes digits for numbers in text
+# substitutes ` for ' and substitutes digits for written numbers
 def clean_text(file_path, language):
 
     with open(file_path, "r", encoding="utf-8") as file:
@@ -118,14 +120,14 @@ def clean_text(file_path, language):
     cleaned_text = re.sub(r'[\[\(].*?[\]\)]', '', cleaned_text)  # remove content between brackets and parentheses
     cleaned_text = re.sub(r'\b(Ref\.)|(Refren)|(Chorus)\b', '', cleaned_text) # removes Ref., Refren and Chorus (all mean chorus)
     cleaned_text = re.sub(r'`', "'", cleaned_text) # substitutes ` for ', the second one is the one used in polish and english orthography
-    if language == 'polish': # substituting digits for numbers in text. This if statement just selects the language (polish or english)
+    if language == 'polish': # substituting digits for written numbers. This if statement just selects the language (polish or english)
         cleaned_text = re.sub(r'\d+', digits_to_words_pl, cleaned_text)
     else:
         cleaned_text = re.sub(r'\d+', digits_to_words_en, cleaned_text)
 
     return cleaned_text
 
-# function to process the scraped lyrics, need to pass language for the clean_text function
+# main function to process the scraped lyrics, need to pass language for the clean_text function primarily but i also use it for more stuff
 def process_lyrics(file_path, model, language):
 
     print(f'\nProcessing {language.capitalize()} lyrics...')
@@ -138,11 +140,11 @@ def process_lyrics(file_path, model, language):
 
     # tokenizes and gets the length of each token
     print('\nTokenizing...')
-    tokens = [token.text.lower() for token in doc if token.is_alpha]
+    tokens = [token.text.lower() for token in doc if token.is_alpha] # this is only saving alphabetic characters
     word_lengths = [len(word) for word in tokens]
 
     print('\nCalculating frequencies...\n')
-    # Counter gets the frequency of each word length
+    # counter gets the frequency of each word length
     length_counts = Counter(word_lengths)
 
     # sorts by word length (result is a list of tuples, for example: [(1, 533), (2, 324)] ...)
@@ -187,11 +189,11 @@ def process_lyrics(file_path, model, language):
 
 ### ###
 
-# loading the models
+# this is where the models are loaded and where the main functions are called
 print('\nLoading models...\n')
-nlp_eng = spacy.load('en_core_web_sm')
-nlp_pol = spacy.load('pl_core_news_sm')
+nlp_eng = spacy.load('en_core_web_sm') # english model
+nlp_pol = spacy.load('pl_core_news_sm') # polish model
 
 # running the main function for english and polish
-process_lyrics(file_path='english_lyrics.txt', model=nlp_eng, language='english')
+process_lyrics(file_path='english_lyrics.txt', model=nlp_eng, language='english') # just specifying the arguments for clarity
 process_lyrics('polish_lyrics.txt', nlp_pol, 'polish')
