@@ -86,12 +86,11 @@ def scrape(artist, output_file):
             else: # if there is only one page, stop the loop
                 break
 
-# list of artists and the name of the file to which append the lyrics
+# file where the lyrics will be stored and list of artists
 files_and_artists = {'polish_lyrics.txt': ['ostr', 'paktofonika', 'pezet', 'łona i webber', '52 dębiec'], 
                      'english_lyrics.txt': ['eminem', 'de la soul', 'outkast', 'biggie', 'a tribe called quest']}
 
-
-# double for loop that goes through the list above to scrape said lyrics. It's scraping more than 1500 songs so it takes a couple of minutes
+# double for loop that goes through the list above to scrape the lyrics. It's scraping more than 1500 songs so it takes a couple of minutes
 for file, artists in files_and_artists.items():
     for artist in artists:
         scrape(artist, file)
