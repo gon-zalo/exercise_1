@@ -17,6 +17,7 @@ import numpy as np
 THIS CODE WILL FIRST SCRAPE LYRICS FROM MORE THAN 1500 SONGS AND CREATE TWO .TXT FILES, ONE FOR ENGLISH AND ONE FOR POLISH
 AFTERWARDS IT WILL CLEAN THE TEXT OF THE FILE (FIRST ENGLISH, THEN POLISH) OF UNNECESSARY STUFF USING REGEX AND IT WILL TOKENIZE IT USING SPACY 
 ONCE ALL OF THAT IS DONE IT WILL CALCULATE ZIPF'S ABBREVIATION LAW AND SHOW A PLOT
+IT IS USING AN ENGLISH AND A POLISH SPACY MODEL THAT SHOULD BE DOWNLOADED BEFOREHAND 'en_core_web_sm' and 'pl_core_news_sm'.
 '''
 
 ### function to scrape ###
@@ -76,7 +77,7 @@ def scrape(artist, output_file):
                 lyrics_div = song_soup.find('div', class_='inner-text')
                 if lyrics_div:
                     lyrics = lyrics_div.get_text().strip() # .get_text() revomes html tags, .strip() removes extra whitespaces from the text
-                    file.write(lyrics) # saving the lyrics to the file
+                    file.write('\n' + lyrics) # saving the lyrics to the file after a new line
 
                 print(f"Saved lyrics for: {song_title}")
 
@@ -91,12 +92,12 @@ def scrape(artist, output_file):
 def digits_to_words_en(match): # extracts the matched digits from the regex (groups them so 14 is fourteen not one four) then runs the function from the library, specifying the language
     
     number = match.group()
-    return num2words(number, lang='en')
+    return num2words(number + ' ', lang='en')
 
 def digits_to_words_pl(match): # same as the above function
     
     number = match.group()
-    return num2words(number, lang='pl')
+    return num2words(number + ' ', lang='pl')
 
 # function to clean text with regex, it runs inside the process_lyrics function 
 # it removes text inside brackets and parenthesis, both included, removes "Chorus" in both languages, 
@@ -127,10 +128,11 @@ def process_lyrics(file_path, model, language):
     print('\nCleaning text...')
     doc = model(clean_text(file_path, language))
 
-    # tokenizes and gets the length of each token
+    # tokenizes, gets unique tokens the length of each
     print('\nTokenizing...')
     tokens = [token.text.lower() for token in doc if token.is_alpha] # this is only saving alphabetic characters
-    word_lengths = [len(word) for word in tokens]
+    unique_tokens = list(set(tokens))
+    word_lengths = [len(word) for word in unique_tokens]
 
     print('\nCalculating frequencies...\n')
     # counter gets the frequency of each word length
@@ -143,7 +145,8 @@ def process_lyrics(file_path, model, language):
     lengths, absolute_frequencies = zip(*sorted_length_counts)
 
     # calculating relative frequencies (frequency divided by total number of tokens)
-    total_tokens = len(tokens)
+    print(unique_tokens[:500])
+    total_tokens = len(unique_tokens)
     print(f'There are {total_tokens} tokens in {file_path}\n')
     relative_frequencies = [freq / total_tokens for freq in absolute_frequencies] # freq in frequencies are already sorted, so no need to do it here
 
@@ -166,8 +169,8 @@ def process_lyrics(file_path, model, language):
     plt.figure(figsize=(6, 4))
     plt.subplots_adjust(left = 0.155, right=0.935, top=0.910, bottom=0.14)
     plt.plot(lengths, relative_frequencies, marker='o', linestyle='-', color=color)
-    plt.xticks(range(1, 19 + 1, 1))
-    plt.yticks(np.arange(0, 0.250, 0.025)) # using np.arange to allow for floating point numbers
+    plt.xticks(range(1, len(lengths) + 1, 1))
+    plt.yticks(np.arange(0, 0.225, 0.025)) # using np.arange to allow for floating point numbers
     plt.xlabel('Word length (in number of characters)')
     plt.ylabel('Relative frequency of word length')
     plt.title(f'Zipf\'s Law of Abbreviation in {language.capitalize()} lyrics')
