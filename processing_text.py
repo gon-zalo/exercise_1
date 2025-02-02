@@ -131,41 +131,73 @@ def process_lyrics(file_path, model, language):
     # tokenizes, gets unique tokens the length of each
     print('\nTokenizing...')
     tokens = [token.text.lower() for token in doc if token.is_alpha] # this is only saving alphabetic characters
-    unique_tokens = list(set(tokens))
-    word_lengths = [len(word) for word in unique_tokens]
 
     print('\nCalculating frequencies...\n')
-    # counter gets the frequency of each word length
-    length_counts = Counter(word_lengths)
+    # counter gets the frequency of each token
+    length_counts = Counter(tokens)
+    
+    # filter words with lengths up to 20, since words above that have a frequency of 1
+    filtered_length_counts = {word: freq for word, freq in length_counts.items() if len(word) <= 20}
 
-    # sorts by word length (result is a list of tuples, for example: [(1, 533), (2, 324)] ...)
-    sorted_length_counts = sorted(length_counts.items())
+    # calculate word lengths and frequencies for filtered words
+    word_lengths = [len(word) for word in filtered_length_counts.keys()]
+    word_frequencies = list(filtered_length_counts.values())
 
-    # zip(*) unpacks the list of tuples in tuples in two separate variables, i.e. lenghts = (1, 2, 3, 4, 5, 6 ...), frequencies = (312, 233, 167, 53 ...)
-    lengths, absolute_frequencies = zip(*sorted_length_counts)
+    # normalize frequencies to per-million word count
+    total_tokens = len(tokens)
+    print(f'Total tokens in {language.capitalize()} lyrics: {total_tokens}')
+    word_frequencies_per_million = [(freq / total_tokens) * 1_000_000 for freq in word_frequencies]
 
-    # calculating relative frequencies (frequency divided by total number of tokens)
-    print(unique_tokens[:500])
-    total_tokens = len(unique_tokens)
-    print(f'There are {total_tokens} tokens in {file_path}\n')
-    relative_frequencies = [freq / total_tokens for freq in absolute_frequencies] # freq in frequencies are already sorted, so no need to do it here
+    # take the logarithm of frequencies for plotting
+    log_frequencies = np.log10(word_frequencies_per_million)
 
-    # filtering lengths up to 20, longer words appear only once in both languages
-    lengths = [length for length in lengths if length <= 20]
-    absolute_frequencies = [freq for length, freq in zip(lengths, absolute_frequencies) if length <= 20]
-    relative_frequencies = [rel_freq for length, rel_freq in zip(lengths, relative_frequencies) if length <= 20]
+    # adds jitter to word lengths and log frequencies in the plot below
+    jitter_magnitude = 0.3  # Adjust this value to control the amount of jitter
+    jittered_lengths = word_lengths + np.random.uniform(-jitter_magnitude, jitter_magnitude, size=len(word_lengths))
+    jittered_frequencies = log_frequencies + np.random.uniform(-jitter_magnitude, jitter_magnitude, size=len(log_frequencies))
 
-    # this just prints each length, absolute and relative frequencies
-    for length, freq, rel_freq in zip(lengths, absolute_frequencies, relative_frequencies): # need to zip them
-        print(f"Length: {length}, Frequency: {freq}, Relative Frequency: {rel_freq:.6f}")
+    # simple if statement to change the color of the plot below depending on the language
+    if language == 'polish':
+        color = '#484D6D'
+    else:
+        color = '#104F55'
 
-    return lengths, relative_frequencies # to plot the data afterwards
+    # plot
+    plt.figure(figsize=(8, 6))
+    plt.subplots_adjust(left=0.155, right=0.935, top=0.910, bottom=0.14)
+    plt.scatter(jittered_lengths, jittered_frequencies, alpha=0.5, color=color, s=14)
+
+    # highlight the top 10 most frequent tokens
+    number_top_words = 10  # Number of top tokens to highlight
+    top_words = sorted(filtered_length_counts.items(), key=lambda word: word[1], reverse=True)[:number_top_words]
+    print(f'\nTop tokens in {language.capitalize()}: {top_words}\n')
+    
+    for word, freq in top_words:
+        length = len(word)
+        log_freq = np.log10((freq / total_tokens) * 1_000_000) # log of the frequency of the top words
+         
+        # add jitter to the top words
+        jittered_length = length + np.random.uniform(-jitter_magnitude, jitter_magnitude)
+        jittered_freq = log_freq + np.random.uniform(-jitter_magnitude, jitter_magnitude)
+        plt.scatter(jittered_length, jittered_freq, color= '#EE6352', zorder=2.5, s=18)
+        plt.text(jittered_length, jittered_freq, word, fontsize=12, ha='left', va='bottom')
+
+    # Add labels and title
+    plt.title(f"Zipf\'s Law of Abbreviation in {language.capitalize()} lyrics")
+    plt.xticks(range(1, 20))
+    plt.xlabel('Word length (in number of characters)')
+    plt.ylabel("Log per-million word count")
+    plt.grid(alpha=0.5)
+    # plt.savefig(f'zipf_abbreviation_{language}.pdf') # saving the plot
+
+    # Show the plot
+    plt.show()
 
 # dictionary of files where the lyrics will be stored and list of artists
 files_and_artists = {'polish_lyrics.txt': ['ostr', 'paktofonika', 'pezet', 'łona i webber', '52 dębiec'], 
                      'english_lyrics.txt': ['eminem', 'de la soul', 'outkast', 'biggie', 'a tribe called quest']}
 
-# # this is where things happen, the functions are called and the models are loaded
+# this is where things happen, the functions are called and the models are loaded
 # print('Scraping lyrics...\n')
 # # double for loop that goes through the list of files and artists to scrape the lyrics. It's scraping more than 1500 songs so it takes a couple of minutes
 # for file, artists in files_and_artists.items():
@@ -177,27 +209,5 @@ nlp_eng = spacy.load('en_core_web_sm') # english model
 nlp_pol = spacy.load('pl_core_news_sm') # polish model
 
 # running the main function for english and polish, need to call the file we are reading the content of
-lengths_eng, rel_freq_eng = process_lyrics(file_path='english_lyrics.txt', model=nlp_eng, language='english') # just specifying the arguments for clarity
-lengths_pol, rel_freq_pol = process_lyrics('polish_lyrics.txt', nlp_pol, 'polish')
-
-
-# Plotting both English and Polish lyrics together
-plt.figure(figsize=(6, 4))
-plt.subplots_adjust(left=0.155, right=0.935, top=0.910, bottom=0.14)
-
-# Plot English lyrics
-plt.plot(lengths_eng, rel_freq_eng, marker='o', linestyle='-', color='#3BB273', label='English')
-
-# Plot Polish lyrics
-plt.plot(lengths_pol, rel_freq_pol, marker='o', linestyle='-', color='#7768AE', label='Polish')
-
-plt.xticks(range(1, max(len(lengths_eng), len(lengths_pol)) + 1, 1))
-plt.yticks(np.arange(0, 0.225, 0.025)) # using np.arange to allow for floating point numbers
-plt.xlabel('Word length (in number of characters)')
-plt.ylabel('Relative frequency of word length')
-plt.title('Zipf\'s Law of Abbreviation in English and Polish lyrics')
-plt.legend()
-plt.grid(alpha=0.5)
-plt.savefig('zipf_abbreviation_english_polish.pdf', format='pdf')
-
-plt.show()
+process_lyrics(file_path='english_lyrics.txt', model=nlp_eng, language='english') # just specifying the arguments for clarity
+process_lyrics('polish_lyrics.txt', nlp_pol, 'polish')
